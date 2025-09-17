@@ -6,21 +6,23 @@ import { formatDate, getRemainingDays } from "../helpers/formatHelpers";
 import Icon from "react-native-vector-icons/Ionicons";
 import { Colors } from "../const/enum/color";
 import DatePicker from "react-native-date-picker";
+import { priorityNames } from "../const/enum/priorityNames";
 
 
 interface CTodoItemProps {
     item: TodoModel;
     expandedId: string | null;
     handleExpand: (id: string) => void;
-    handleEdit: (id: string) => void;
-    handleDone: (id: string, title: string, date: Date) => void;
+    handleDone: (id: string, title: string, date: Date, priority: string) => void;
+    handleComplete: (id: string) => void;
     handleDelete: (id: string) => void;
 }
 
-const CTodoItem = ({ item, expandedId, handleExpand, handleEdit, handleDone, handleDelete }: CTodoItemProps) => {
+const CTodoItem = ({ item, expandedId, handleExpand, handleComplete, handleDone, handleDelete }: CTodoItemProps) => {
     const [showPicker, setShowPicker] = useState(false);
     const [date, setDate] = useState(item.deadline ? new Date(item.deadline) : new Date());
     const [title, setTitle] = useState(item.title);
+    const [priority, setPriority] = useState(item.priority);
     const titleOffset = useSharedValue(0);
     const infoOpacity = useSharedValue(1);
     const deleteOpacity = useSharedValue(0);
@@ -30,12 +32,10 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleEdit, handleDone, han
 
     const handleChange = (selectedDate: Date | undefined) => {
         if (selectedDate) {
-            console.log("Selected date:", selectedDate.toISOString());
             setShowPicker(false);
             setDate(selectedDate);
         }
     };
-    console.log('DATE: ', date.toISOString());
 
     useEffect(() => {
         titleOffset.value = expanded ? 30 : 0;
@@ -79,10 +79,10 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleEdit, handleDone, han
                 style={{ paddingTop: 6, flexDirection: 'row' }}
             >
                 {!expanded && (
-                    <TouchableOpacity onPress={() => handleEdit(item.id)} style={{ marginRight: 12 }}>
+                    <TouchableOpacity onPress={() => handleComplete(item.id)} style={{ marginRight: 12 }}>
                         {item.completed ? (
                             <Animated.View style={infoStyle}>
-                                <Icon name="checkbox-outline" size={28} color={Colors.caribbeanGreen} />
+                                <Icon name="checkbox" size={28} color={Colors.primary} />
                             </Animated.View>
                         ) : (
                             <Animated.View style={infoStyle}>
@@ -90,7 +90,8 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleEdit, handleDone, han
 
                             </Animated.View>
                         )}
-                    </TouchableOpacity>)}
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => handleExpand(expanded ? null as any : item.id)}
@@ -138,7 +139,27 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleEdit, handleDone, han
 
                             <View style={styles.fieldRow}>
                                 <Text style={styles.fieldLabel}>Mức độ ưu tiên</Text>
-                                <Text style={styles.fieldValue}>{item.priority}</Text>
+                                <View style={{ flex: 2 }}>
+                                    <View style={{ flexDirection: "row" }}>
+                                        {Object.values(priorityNames).map((level) => (
+                                            <TouchableOpacity
+                                                key={level}
+                                                onPress={() => setPriority(level as priorityNames)}
+                                                style={{
+                                                    padding: 8,
+                                                    backgroundColor: priority === level ? Colors.cadmiumOrange : Colors.lightGray,
+                                                    borderRadius: 8,
+                                                    flex: 1,
+                                                    alignItems: "center",
+                                                    justifyContent: 'center',
+                                                    marginHorizontal: 4
+                                                }}
+                                            >
+                                                <Text numberOfLines={1} style={{ color: priority === level ? Colors.white : Colors.black, fontSize: 14 }}>{level}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
                             </View>
                             <View style={styles.fieldDivider} />
 
@@ -148,7 +169,7 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleEdit, handleDone, han
                                     style={styles.doneButton}
                                     activeOpacity={0.85}
                                     onPress={() => {
-                                        handleDone(item.id, title, date);
+                                        handleDone(item.id, title, date, priority);
                                         setShowPicker(false);
                                         handleExpand(null as any);
                                     }}
@@ -239,7 +260,7 @@ const styles = StyleSheet.create({
     },
     fieldLabel: {
         flex: 1,
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: "700",
         color: "#111",
     },

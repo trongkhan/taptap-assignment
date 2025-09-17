@@ -58,11 +58,11 @@ const HomeScreen = () => {
         setSelectedIndex(index);
     };
 
-    const handleEditDone = (id: string, title: string, date: Date) => {
-        handleEditTodo(id, title, date);
+    const handleEditDone = (id: string, title: string, date: Date, priority: string) => {
+        handleEditTodo(id, title, date, priority as priorityNames);
     }
 
-    const handleEditTodo = (id: string, title: string, date: Date) => {
+    const handleEditTodo = (id: string, title: string, date: Date, priority: priorityNames) => {
         // Dispatch an action to edit the todo with the given id
         dispatch(editTodo({
             id,
@@ -135,10 +135,8 @@ const HomeScreen = () => {
                         setExpanded(true);
                     }
                 }}
-                handleEdit={() => {
-                    handleEditPress(index);
-                }}
-                handleDone={(id: string, title: string, date: Date) => handleEditDone(id, title, date)}
+                handleComplete={(id: string) => handleCompleteItem(id)}
+                handleDone={(id: string, title: string, date: Date, priority: string) => handleEditDone(id, title, date, priority)}
                 handleDelete={(id: string) => handleDeleteItem(id)}
             />
         );
