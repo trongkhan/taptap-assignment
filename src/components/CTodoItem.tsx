@@ -1,6 +1,6 @@
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { TodoModel } from "../models/todoModel";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { formatDate, getRemainingDays } from "../helpers/formatHelpers";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -23,7 +23,12 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleComplete, handleDone,
     const [date, setDate] = useState(item.deadline ? new Date(item.deadline) : new Date());
     const [title, setTitle] = useState(item.title);
     const [priority, setPriority] = useState(item.priority);
-    const titleOffset = useSharedValue(0);
+    const titleOffsetX = useSharedValue(0);
+    const titleOffsetY = useSharedValue(0);
+    const checkboxOpacity = useSharedValue(1);
+    const pencilOpacity = useSharedValue(1);
+    const checkboxTranslateX = useSharedValue(0);
+    const pencilTranslateX = useSharedValue(0);
     const infoOpacity = useSharedValue(1);
     const deleteOpacity = useSharedValue(0);
     const deleteTranslate = useSharedValue(-10);
@@ -38,18 +43,42 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleComplete, handleDone,
     };
 
     useEffect(() => {
-        titleOffset.value = expanded ? 30 : 0;
-        infoOpacity.value = withTiming(1, { duration: 220 });
-        deleteOpacity.value = expanded ? 1 : 0;
-        deleteTranslate.value = expanded ? 0 : -20;
+        if (expanded) {
+            checkboxOpacity.value = withTiming(0, { duration: 400 });
+            pencilOpacity.value = withTiming(0, { duration: 400 });
+            checkboxTranslateX.value = withTiming(-16, { duration: 320 });
+            pencilTranslateX.value = withTiming(16, { duration: 320 });
+            titleOffsetY.value = withSpring(30, { damping: 15, stiffness: 80, mass: 1 });
+            titleOffsetX.value = withSpring(0, { damping: 30, stiffness: 80, mass: 1 });
+            infoOpacity.value = withTiming(1, { duration: 220 });
+            deleteOpacity.value = expanded ? 1 : 0;
+            deleteTranslate.value = expanded ? 0 : -20;
+        } else {
+            checkboxOpacity.value = withTiming(1, { duration: 320 });
+            pencilOpacity.value = withTiming(1, { duration: 320 });
+            checkboxTranslateX.value = withTiming(0, { duration: 320 });
+            pencilTranslateX.value = withTiming(0, { duration: 320 });
+            titleOffsetY.value = withSpring(0, { damping: 15, stiffness: 80, mass: 1 });
+            titleOffsetX.value = withSpring(0, { damping: 15, stiffness: 80, mass: 1 });
+            infoOpacity.value = withTiming(1, { duration: 220 });
+            deleteOpacity.value = expanded ? 1 : 0;
+            deleteTranslate.value = expanded ? 0 : -20;
+        }
     }, [expanded]);
 
+    const checkboxStyle = useAnimatedStyle(() => ({
+        opacity: checkboxOpacity.value,
+        transform: [{ translateX: checkboxTranslateX.value }],
+    }));
+
+    const pencilStyle = useAnimatedStyle(() => ({
+        opacity: pencilOpacity.value,
+        transform: [{ translateX: pencilTranslateX.value }],
+    }));
+
     const titleStyle = useAnimatedStyle(() => ({
-        marginTop: withSpring(titleOffset.value, {
-            damping: 15,
-            stiffness: 80,
-            mass: 1,
-        }),
+        marginTop: titleOffsetY.value,
+        transform: [{ translateX: titleOffsetX.value }],
     }));
 
     const infoStyle = useAnimatedStyle(() => ({
@@ -79,18 +108,15 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleComplete, handleDone,
                 style={{ paddingTop: 6, flexDirection: 'row' }}
             >
                 {!expanded && (
-                    <TouchableOpacity onPress={() => handleComplete(item.id)} style={{ marginRight: 12 }}>
-                        {item.completed ? (
-                            <Animated.View style={infoStyle}>
+                    <Animated.View style={checkboxStyle}>
+                        <TouchableOpacity onPress={() => handleComplete(item.id)} style={{ marginRight: 12 }}>
+                            {item.completed ? (
                                 <Icon name="checkbox" size={28} color={Colors.primary} />
-                            </Animated.View>
-                        ) : (
-                            <Animated.View style={infoStyle}>
+                            ) : (
                                 <Icon name="square-outline" size={28} color={Colors.lightGray} />
-
-                            </Animated.View>
-                        )}
-                    </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    </Animated.View>
                 )}
                 <TouchableOpacity
                     activeOpacity={0.85}
@@ -98,21 +124,26 @@ const CTodoItem = ({ item, expandedId, handleExpand, handleComplete, handleDone,
                     style={{ flex: 1 }}
                 >
                     {expanded ? (
-                        <Animated.View style={[styles.titleContainer, titleStyle]}>
-                            <TextInput
-                                value={title}
-                                onChangeText={setTitle}
-                                placeholder="Tên task"
-                                style={styles.titleInput}
-                                underlineColorAndroid="transparent"
-                            />
-                            <View style={styles.underline} />
-                        </Animated.View>
+                        <>
+                            <Animated.View style={[styles.titleContainer, titleStyle]}>
+                                <TextInput
+                                    value={title}
+                                    onChangeText={setTitle}
+                                    placeholder="Tên task"
+                                    style={styles.titleInput}
+                                    underlineColorAndroid="transparent"
+                                />
+
+                            </Animated.View>
+                            <View style={[styles.underline]} />
+                        </>
                     ) : (
                         <View style={[styles.row, { alignItems: "center", marginBottom: 8 }]}>
                             <Text style={styles.titleText}>{item.title}</Text>
                             <View style={{ flex: 1 }} />
-                            <Icon name="pencil-outline" size={20} color={Colors.black} />
+                            <Animated.View style={pencilStyle}>
+                                <Icon name="pencil-outline" size={20} color={Colors.black} />
+                            </Animated.View>
                         </View>
                     )}
 
